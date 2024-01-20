@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
-import { dimension } from "./types";
+import { dimension } from "../types";
 
 export function setup_simulation(dimension: dimension) {
   const scene = new THREE.Scene();
@@ -30,20 +30,13 @@ function createCamera(renderer: THREE.Renderer, dimensions: Array<number>): THRE
   const camera = new THREE.PerspectiveCamera(
     75,
     window.innerWidth / window.innerHeight,
-    0.01,
-    1000,
   );
-  let [originX, originY, originZ] = [dimensions[0] / 2., dimensions[1] / 2., dimensions[2] / 2.];
-  if (!originZ) {
-    originZ = 0;
-  }
-  camera.lookAt(5, 5, 5);
   // create controls for user
   const controls = new OrbitControls(camera, renderer.domElement);
-  controls.target.set(originX, originY, originZ);
   camera.position.x = 5;
   camera.position.y = 5;
-  camera.position.z = 10;
+  camera.position.z = 5;
+  camera.rotateY(-Math.PI / 2.);
   // if (dimension == 2)
   //   lockCameraTo2D(camera, controls, dimensions);
   controls.update();
@@ -63,9 +56,9 @@ function createGround(scene: THREE.Scene, dimensions: Array<number>) {
     side: THREE.DoubleSide,
   });
   const plane = new THREE.Mesh(geo, mat);
-  plane.rotateX(-Math.PI / 2);
-  plane.translateX(dimensions[1] / 2.);
-  plane.translateY(-dimensions[0] / 2.);
+  plane.rotateX(-Math.PI / 2.)
+  if (dimensions.length == 3)
+    plane.translateZ(-dimensions[2] / 2.);
   scene.add(plane);
 }
 
@@ -80,13 +73,13 @@ function createCube(scene: THREE.Scene, bounding_box_dimensions: Array<number>) 
   const geometry = new THREE.BoxGeometry(width, height, depth);
   const material = new THREE.MeshPhongMaterial({
     color: 0xffffff,
-    opacity: 0.08,
+    opacity: 0.1,
     transparent: true,
   });
   const cube = new THREE.Mesh(geometry, material);
-  cube.position.x = width / 2.0;
-  cube.position.y = height / 2.0;
-  cube.position.z = depth / 2.0;
+  // cube.position.x = width / 2.0;
+  // cube.position.y = height / 2.0;
+  // cube.position.z = depth / 2.0;
   scene.add(cube);
   return cube;
 }
