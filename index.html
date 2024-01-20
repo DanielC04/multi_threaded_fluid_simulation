@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="logo.svg" />
+    <title>Simple fluid simulation</title>
+    <link rel="stylesheet" href="index.css" />
+  </head>
+  <body>
+    <div class="navbar">
+      <h1>Fluid simulation</h1>
+      <div class="toggle">
+        <label>2D <input type="checkbox" checked> 3D
+        </label>
+        <!-- <input type="checkbox"> -->
+      </div>
+    </div>
+    <div class="controls"></div>
+    <div class="simulation-2D hidden"></div>
+    <div class="simulation-3D"></div>
+
+    <script defer type="module" src="./index.ts"></script>
+  </body>
+</html>
