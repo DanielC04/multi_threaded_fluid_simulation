@@ -14,7 +14,7 @@ export type simulation_settings = {
 export const default_settings: simulation_settings = {
   mass: 1.0,
   target_density: 5.0,
-  pressure_multiplier: 15.0,
+  pressure_multiplier: 1.0,
   radius_of_influence: 1.0,
   gravity: 0.0,
   viscosity: 0.10,

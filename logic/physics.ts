@@ -42,22 +42,25 @@ export function update_densities(positions: Float32Array, densities: Float32Arra
 }
 
 export function update_pressure_forces(positions: Float32Array, densities: Float32Array, pressure_forces: Float32Array, simulation_settings: simulation_settings) {
+  console.log(pressure_forces.length, densities.length, positions.length)
   const n = densities.length;
   for (let i = 0; i < n; i++) {
     let pressure_force = [0.0, 0.0, 0.0];
     for (let j = 0; j < n; j++) {
+      if (i == j) continue;
       const distance = dist(positions[3 * i], positions[3 * i + 1], positions[3 * i + 2], positions[3 * j], positions[3 * j + 1], positions[3 * j + 2]);
       const pressure_1 = density_to_pressure(densities[i], simulation_settings);
       const pressure_2 = density_to_pressure(densities[j], simulation_settings);
-      const average_pressure = (pressure_1 + pressure_2) / 2.0
+      const average_pressure = (pressure_1 + pressure_2) / 2.0;
       for (let dimension = 0; dimension < 3; dimension++) {
-        const direction = (positions[3 * i + dimension] - positions[3 * j + dimension]) / distance;
+        if (distance == 0) continue;
+        const direction = (positions[3 * j + dimension] - positions[3 * i + dimension]) / distance;
         pressure_force[dimension] += average_pressure / densities[i] * direction * smoothing_kernel_spiky_derivative(distance, simulation_settings.radius_of_influence);
       }
     }
     // set the calculated forces
     for (let dimension = 0; dimension < 3; dimension++)
-      pressure_force[3 * i + dimension] = pressure_force[dimension] * simulation_settings.mass;
+      pressure_forces[3 * i + dimension] = pressure_force[dimension] * simulation_settings.mass;
   }
 }
 

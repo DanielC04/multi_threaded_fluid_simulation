@@ -5,9 +5,9 @@ export function smoothing_kernel_spiky(dist: number, radius_of_influence: number
 }
 
 export function smoothing_kernel_spiky_derivative(dist: number, radius_of_influence: number) {
-  if (dist < radius_of_influence) return 0.0;
+  if (dist > radius_of_influence) return 0.0;
   let scale = -45.0 / (Math.PI * Math.pow(radius_of_influence, 6));
-  scale * (radius_of_influence - dist) * (radius_of_influence - dist)
+  return scale * (radius_of_influence - dist) * (radius_of_influence - dist)
 }
 
 export function dist(x1: number, y1: number, z1: number, x2: number, y2: number, z2: number) {

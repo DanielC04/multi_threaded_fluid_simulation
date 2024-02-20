@@ -4,7 +4,7 @@ import { Simulationlogic } from './Simulationlogic';
 export class Simulationsettings {
   mass: number = 1.0;
   target_density: number = 5.0;
-  pressure_multiplier: number = 15.0;
+  pressure_multiplier: number = 1.0;
   radius_of_influence: number = 1.0;
   gravity: number = 0.0;
   viscosity: number = 0.10;

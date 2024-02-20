@@ -1,6 +1,5 @@
 import { default_settings, dimension, simulation_settings } from "../types";
 import { apply_gravity, apply_pressure_forces, keep_particles_in_bound, move_particles, update_densities, update_pressure_forces } from "./physics";
-import gradient from "gradient-color"
 
 const OPTIMAL_TIME_PER_SIMULATION_STEP = 1000 / 60.;
 
@@ -49,11 +48,11 @@ export class Simulationlogic {
   step(dt: number) {
     if (this.simulation_settings.is_paused || !this.simulation_settings.is_focused) return;
     update_densities(this.positions, this.densities, this.simulation_settings);
-    move_particles(dt, this.positions, this.velocities);
     keep_particles_in_bound(this.positions, this.velocities, this.simulation_settings.simulation_bound);
     apply_gravity(dt, this.velocities, this.simulation_settings);
     update_pressure_forces(this.positions, this.densities, this.pressure_forces, this.simulation_settings);
     apply_pressure_forces(dt, this.velocities, this.pressure_forces, this.densities);
+    move_particles(dt, this.positions, this.velocities);
 
     this.write_colors_to_shared_memory();
     this.write_positions_to_shared_memory();
