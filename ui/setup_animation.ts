@@ -37,8 +37,9 @@ export const setup_graphics = () => {
   }
 
   simulation2d = new Simulation(2, 1000);
-  simulation2d.settingUI.settings.is_focused = false;
+  simulation2d.settingUI.set_focus(false);
   simulation3d = new Simulation(3, 1000);
+  simulation2d.settingUI.set_focus(true);
 
   setDimension();
 }

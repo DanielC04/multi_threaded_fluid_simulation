@@ -25,7 +25,7 @@ export class SettingUI {
         this.settings.is_paused = !this.settings.is_paused;
         this.update_settings_in_worker();
       } else if (e.key === "s") {
-        // this.simulation?.logic_sim?.step(1. / 60)
+        this.logic_worker.postMessage({ type: "step" })
       } else if (e.key == "D" || e.code === "KeyD") {
         // this.simulation?.logic_sim?.debug()
       }

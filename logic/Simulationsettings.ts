@@ -9,6 +9,7 @@ export class Simulationsettings {
   gravity: number = 0.0;
   viscosity: number = 0.10;
   is_paused: boolean = false;
+  is_focused: boolean = false;
   gui: GUI;
   stats: Stats;
   simulationlogic: Simulationlogic;

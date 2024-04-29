@@ -42,7 +42,6 @@ export function update_densities(positions: Float32Array, densities: Float32Arra
 }
 
 export function update_pressure_forces(positions: Float32Array, densities: Float32Array, pressure_forces: Float32Array, simulation_settings: simulation_settings) {
-  console.log(pressure_forces.length, densities.length, positions.length)
   const n = densities.length;
   for (let i = 0; i < n; i++) {
     let pressure_force = [0.0, 0.0, 0.0];
@@ -72,7 +71,7 @@ export function apply_pressure_forces(dt: number, velocities: Float32Array, pres
   for (let i = 0; i < densities.length; i++) {
     if (densities[i] == 0) continue;
     for (let dimension = 0; dimension < 3; dimension++) {
-      velocities[3 * i + dimension] += pressure_forces[3 * i + dimension] / densities[i] * dt;
+      velocities[3 * i + dimension] = Math.min(10., velocities[3 * i + dimension] + pressure_forces[3 * i + dimension] / densities[i] * dt);
     }
   }
 }
