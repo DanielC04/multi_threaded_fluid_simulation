@@ -1,5 +1,5 @@
 import { GUI } from 'dat.gui'
-import { Simulationlogic } from './Simulationlogic';
+import { SimulationLogic } from './Simulationlogic';
 
 export class Simulationsettings {
   mass: number = 1.0;
@@ -12,9 +12,9 @@ export class Simulationsettings {
   is_focused: boolean = false;
   gui: GUI;
   stats: Stats;
-  simulationlogic: Simulationlogic;
+  simulationlogic: SimulationLogic;
 
-  constructor(simulationlogic: Simulationlogic) {
+  constructor(simulationlogic: SimulationLogic) {
     this.setup_key_inputs();
     this.create_debug_UI();
     this.simulationlogic = simulationlogic;
@@ -38,7 +38,7 @@ export class Simulationsettings {
     // get domElemnt where gui should be placed
     const container = document.body.querySelector(`.controls`);
     container && container.appendChild(this.gui.domElement);
-    const simulationFolder = this.gui.addFolder(`Simulation ${this.simulationlogic.dimension}D`);
+    const simulationFolder = this.gui.addFolder(`Simulation ${this.simulationlogic.dimensions}D`);
     simulationFolder.add(this, 'is_paused').name('Pause simulation').listen()
     simulationFolder.add(this, 'mass', 0.1, 10.0, 0.1).name('Particle mass').listen()
     simulationFolder.add(this, 'target_density', 0.1, 100.0).name('Target density').listen()

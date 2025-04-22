@@ -9,20 +9,20 @@ const setDimension = () => {
   const is3D = toggle?.checked;
   if (is3D) {
     if (simulation3d) simulation3d.settingUI.set_focus(true);
-    if (simulation2d) simulation2d.settingUI.set_focus(false);
+    // if (simulation2d) simulation2d.settingUI.set_focus(false);
     sim2DContainer?.classList.add("hidden");
     sim3DContainer?.classList.remove("hidden");
     // toggle setting-control boxes
-    document.querySelector(".controls > div:first-child")?.classList.add("hidden");
-    document.querySelector(".controls > div:nth-child(2)")?.classList.remove("hidden");
+    // document.querySelector(".controls > div:first-child")?.classList.add("hidden");
+    // document.querySelector(".controls > div:nth-child(2)")?.classList.remove("hidden");
   } else {
     if (simulation3d) simulation3d.settingUI.set_focus(false);
-    if (simulation2d) simulation2d.settingUI.set_focus(true);
+    // if (simulation2d) simulation2d.settingUI.set_focus(true);
     sim2DContainer?.classList.remove("hidden");
     sim3DContainer?.classList.add("hidden");
     // toggle setting-control boxes
-    document.querySelector(".controls > div:first-child")?.classList.remove("hidden");
-    document.querySelector(".controls > div:nth-child(2)")?.classList.add("hidden");
+    // document.querySelector(".controls > div:first-child")?.classList.remove("hidden");
+    // document.querySelector(".controls > div:nth-child(2)")?.classList.add("hidden");
   }
 };
 
@@ -36,10 +36,10 @@ export const setup_graphics = () => {
     }
   }
 
-  simulation2d = new Simulation(2, 1000);
-  simulation2d.settingUI.set_focus(false);
+  // simulation2d = new Simulation(2, 1000);
+  // simulation2d.settingUI.set_focus(false);
   simulation3d = new Simulation(3, 1000);
-  simulation2d.settingUI.set_focus(true);
+  simulation3d.settingUI.set_focus(true);
 
   setDimension();
 }

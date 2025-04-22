@@ -1,33 +1,23 @@
-import { default_settings, dimension, simulation_settings } from "../types";
-import { apply_gravity, apply_pressure_forces, keep_particles_in_bound, move_particles, update_densities, update_pressure_forces } from "./physics";
+import { Dimension, NUMBER_OF_SECTIONS, NUMBER_OF_SECTIONS_PER_DIMENSION, NUMBER_OF_SUBWORKERS, SharedMemoryMap } from "../types";
+import { AbstractSimulation } from "./AbstractSimulation";
 import chroma from "chroma-js";
+import { coordinates_to_box_id } from "./math_helpers";
 
 const OPTIMAL_TIME_PER_SIMULATION_STEP = 1000 / 60.;
 const color_grad = chroma.scale(['blue', 'green', 'yellow', 'red']);
 
-export class Simulationlogic {
-  number_of_particles: number;
-  dimension: dimension;
-  simulation_settings: simulation_settings;
-  positions: Float32Array;
-  predicted_positions: Float32Array;
-  velocities: Float32Array;
-  densities: Float32Array;
-  pressure_forces: Float32Array;
-  shared_position_view: Float32Array;
-  shared_color_view: Uint32Array;
+const COLORS = [0x001969,0xff0000,0xffff00,0x00ff00,0x00ffff,0x0000ff,0x000fff,0xffff77,0x507a76];
+
+export class SimulationLogic extends AbstractSimulation {
   last_time: number;
   frame_count: number = 0;
   last_fps_time: number = 0.0;
+  subworkers: Array<Worker>;
 
-  constructor(number_of_particles: number, dimension: dimension, shared_position_memory: SharedArrayBuffer, shared_color_memory: SharedArrayBuffer) {
-    this.number_of_particles = number_of_particles;
-    this.dimension = dimension;
-    this.simulation_settings = default_settings;
-    this.shared_position_view = new Float32Array(shared_position_memory);
-    this.shared_color_view = new Uint32Array(shared_color_memory);
+  constructor(number_of_particles: number, dimensions: Dimension, shared_memory: SharedMemoryMap) {
+		super(number_of_particles, dimensions, shared_memory);
     this.last_time = performance.now();
-    this.reset();
+    this.create_subworkers();
     this.simulation_loop();
   }
 
@@ -39,72 +29,121 @@ export class Simulationlogic {
     }
     this.last_time = new_time;
     this.frame_count++;
-    if (this.frame_count % 100 == 0) {
-      console.log("current fps in simulation logic: ", 100.0 / (new_time - this.last_fps_time) * 1000);
+    if (this.frame_count % 500 == 0) {
+      console.log("current fps in simulation logic: ", 500.0 / (new_time - this.last_fps_time) * 1000);
       this.last_fps_time = new_time;
     }
-
-    // actually calculate all the physics stuff of the step
-    this.step(dt);
+    this.step(dt)
 
     const time_left_for_this_step = Math.max(0, OPTIMAL_TIME_PER_SIMULATION_STEP - dt * 1000);
+		// make sure the queue for simulation steps doesn't get too long (if we can't get even near the optimal fps)
     setTimeout(() => this.simulation_loop(), time_left_for_this_step);
   }
 
   step(dt: number) {
+		if (this.frame_count % 100 == 0){
+      // for(let i = 0; i < this.number_of_particles; i ++) console.log(this.views["positions"][i])
+		}
+		// if(this.frame_count % 100 == 0 && !this.simulation_settings.is_paused){
+			this.sort_particles_into_supervision_sections();
+		// }
+    // actually calculate all the physics stuff of the step
+		this.physics_step_in_subworkers(dt);
+
+		// update positions/colors in UI, but only every nth-step:w
+		if (this.frame_count % 10 == 0) {
+			this.update_colors();
+		}
+  }
+
+
+
+	physics_step_in_subworkers(dt: number){
     if (this.simulation_settings.is_paused) return;
-    update_densities(this.positions, this.densities, this.simulation_settings);
-    apply_gravity(dt, this.velocities, this.simulation_settings);
-    update_pressure_forces(this.positions, this.densities, this.pressure_forces, this.simulation_settings);
-    apply_pressure_forces(dt, this.velocities, this.pressure_forces, this.densities);
-    move_particles(dt, this.positions, this.velocities);
-    keep_particles_in_bound(this.positions, this.velocities, this.simulation_settings.simulation_bound);
+		for (let subworker of this.subworkers) subworker.postMessage({ type: "step", dt: dt });
+	}
 
-    this.write_colors_to_shared_memory();
-    this.write_positions_to_shared_memory();
+	sort_particles_into_supervision_sections(){
+		// at position i of the following array there are all the supervised boxes of the i-th box with their particles
+		const all_sections = [];
+		for(let i = 0; i < NUMBER_OF_SECTIONS; i++) all_sections.push([]);
+
+		for(let particle_id = 0; particle_id < this.number_of_particles; particle_id++){
+      const box_id = this.get_box_id_of_particle(particle_id);
+      if (box_id < 0) console.log(box_id)
+      // try{
+        all_sections[box_id].push(particle_id);
+      // } catch (error) {
+      //   console.error(`Error while sorting particle ${particle_id} into section ${box_id}:`, error);
+      // }
+		}	
+
+		for (let worker_id = 0; worker_id < NUMBER_OF_SUBWORKERS; worker_id ++){
+			this.subworkers[worker_id].postMessage({
+				type: "update_particles_in_sections",
+				sections: all_sections
+			});
+		}
+	}
+
+  get_box_id_of_particle(particle_id: number){
+      // using 0.9999 as maximum here to make sure x * NUMBERS_OF_SECTIONS_PER_DIMENSION is never equal to NUMBERS_OF_SECTIONS_PER_DIMENSION, but rather one smaller
+      let x = Math.min(0.9999, Math.max(0.0, this.views["positions"][3*particle_id]));
+      x = Math.floor(x * NUMBER_OF_SECTIONS_PER_DIMENSION);
+      let y = Math.min(0.9999, Math.max(0.0, this.views["positions"][3*particle_id + 1]));
+      y = Math.floor(y * NUMBER_OF_SECTIONS_PER_DIMENSION)
+			let z = 0;
+			if (this.dimensions == 3){
+        z = Math.min(0.9999, Math.max(0.0, this.views["positions"][3*particle_id + 2]))
+        z = Math.floor(z * NUMBER_OF_SECTIONS_PER_DIMENSION);
+      }
+
+			const box_id = coordinates_to_box_id(x, y, z);;
+      if (isNaN(box_id) || isNaN(x) || isNaN(y) || isNaN(z)){
+        // console.log(particle_id, box_id, x, y, z);
+        return 0;
+      }
+      return box_id;
   }
 
-  reset() {
-    const n = this.number_of_particles;
-    this.positions = new Float32Array(n * this.dimension);
-    // initialize positions in cube
-    const dist_between_particles = 0.5;
-    const cube_size = Math.ceil(Math.pow(n, 1. / this.dimension));
-    for (let i = 0; i < n; i++) {
-      let x = i % cube_size;
-      let y = (i - x) / cube_size % cube_size;
-      let z = (i - x - y * cube_size) / (cube_size * cube_size) % cube_size;
-      this.positions[i * 3] = (x - cube_size / 2) * dist_between_particles;
-      this.positions[i * 3 + 1] = this.dimension === 3 ? (z - cube_size / 2) * dist_between_particles : 0.0;
-      this.positions[i * 3 + 2] = (y - cube_size / 2) * dist_between_particles;
+  create_subworkers() {
+    // setup logic worker
+    this.subworkers = [];
+
+    for (let i = 0; i < NUMBER_OF_SUBWORKERS; i++) {
+      this.subworkers[i] = new Worker("./subworker.ts", { type: "module" });
+      this.subworkers[i].postMessage(
+        {
+          type: "init",
+          id: i,
+          dimension: this.dimensions,
+          number_of_particles: this.number_of_particles,
+          shared_memory: this.shared_memory
+        });
     }
-    this.predicted_positions = new Float32Array(n * this.dimension);
-    this.velocities = new Float32Array(n * this.dimension);
-    this.densities = new Float32Array(n);
-    this.pressure_forces = new Float32Array(n * this.dimension);
-    this.write_positions_to_shared_memory();
   }
 
-  write_positions_to_shared_memory() {
-    this.shared_position_view.set(this.positions);
-  }
+	destroy_subworkers_and_self() {
+		for(let worker of this.subworkers) worker.terminate();
+		self.close();
+	}
 
-  densities_to_color_array() {
-    const colors = [];
-    const min_density = Math.min(...this.densities);
-    const max_density = Math.max(...this.densities);
-    // const min_density = 0.0;
-    // const max_density = 20.0;
-    for (let density of this.densities) {
+  update_colors() {
+    const min_density = 0.0;
+    const max_density = 10.0;
+    for (let i = 0; i < this.number_of_particles; i++) {
+      const density = this.views["densities"][i];
       const normed = (density - min_density) / max_density;
       const [r, g, b, _] = color_grad(normed)._rgb;
-
-      colors.push((r << 16) + (g << 8) + b);
+      // const box_id = this.get_box_id_of_particle(i);
+      // console.log(box_id)
+      // this.views["colors"][i] = COLORS[box_id % NUMBER_OF_SUBWORKERS];
+      this.views["colors"][i] = (r << 16) | (g << 8) | b;
     }
-    return colors;
   }
 
-  write_colors_to_shared_memory() {
-    this.shared_color_view.set(this.densities_to_color_array());
-  }
+	update_settings(settings: any) {
+		this.simulation_settings = settings;
+		for(let worker of this.subworkers) worker.postMessage({ "type": "update_settings", settings: settings})
+	}
 }

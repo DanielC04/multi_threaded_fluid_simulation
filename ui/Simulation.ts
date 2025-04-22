@@ -1,6 +1,6 @@
 import { setup_simulation } from "./util";
 import * as THREE from "three";
-import { dimension } from "../types";
+import { Dimension, WORLD_SIZE  } from "../types";
 import { SettingUI } from "./SettingUI";
 
 
@@ -10,7 +10,7 @@ export class Simulation {
   camera: THREE.PerspectiveCamera;
   last_time: DOMHighResTimeStamp = 0.0;
   frame_count: number = 0;
-  dimension: dimension;
+  dimensions: Dimension;
   particle_mesh: THREE.InstancedMesh;
   matrix: THREE.Matrix4 = new THREE.Matrix4();
   translation_vector: THREE.Vector3 = new THREE.Vector3();
@@ -23,16 +23,29 @@ export class Simulation {
   shared_color_memory: SharedArrayBuffer;
   shared_color_view: Uint32Array;
 
-  constructor(dimension: dimension, number_of_particles: number = 1000) {
+  constructor(dimensions: Dimension, number_of_particles: number = 1000) {
     this.number_of_particles = number_of_particles;
-    this.dimension = dimension;
-    this.shared_position_memory = new SharedArrayBuffer(this.number_of_particles * this.dimension * 4);
+    this.dimensions = dimensions;
+    this.shared_position_memory = new SharedArrayBuffer(this.number_of_particles * this.dimensions * 4);
     this.shared_position_view = new Float32Array(this.shared_position_memory);
     this.shared_color_memory = new SharedArrayBuffer(this.number_of_particles * 4);
     this.shared_color_view = new Uint32Array(this.shared_color_memory);
 
+    // setup logic worker
+    this.logic_worker = new Worker("./logic/logic_worker.ts", { type: "module" });
+    this.logic_worker.postMessage(
+      {
+        type: "init",
+        dimension: this.dimensions,
+        number_of_particles: this.number_of_particles,
+        shared_memory: {
+          "positions": this.shared_position_memory,
+          "colors": this.shared_color_memory
+        }
+      });
+
     // setup the THREEJS Scene
-    let { scene, renderer, camera } = setup_simulation(dimension);
+    let { scene, renderer, camera } = setup_simulation(dimensions);
     this.scene = scene;
     this.renderer = renderer;
     this.camera = camera;
@@ -44,19 +57,13 @@ export class Simulation {
     this.particle_mesh = new THREE.InstancedMesh(particle_geometry, material, this.number_of_particles);
     this.scene.add(this.particle_mesh);
 
-    // setup logic worker
-    this.logic_worker = new Worker("./logic/logic_worker.ts", { type: "module" });
-    this.logic_worker.postMessage(
-      {
-        type: "init",
-        dimension: this.dimension,
-        number_of_particles: this.number_of_particles,
-        shared_position_memory: this.shared_position_memory,
-        shared_color_memory: this.shared_color_memory
-      });
+    // make sure all workers are destroyed before reload
+    // window.addEventListener('beforeunload', () => {
+    //   this.logic_worker.postMessage({ "type": "kill" })
+    // });
 
     // setup controls to change simulation settings
-    this.settingUI = new SettingUI(this.logic_worker, this.dimension);
+    this.settingUI = new SettingUI(this.logic_worker, this.dimensions);
 
     // start animating
     window.requestAnimationFrame(timestamp => this.animate(timestamp));
@@ -87,10 +94,9 @@ export class Simulation {
     // console.log(view)
     for (let i = 0; i < this.number_of_particles; i++) {
       this.particle_mesh.getMatrixAt(i, this.matrix);
-      this.translation_vector.x = this.shared_position_view[i * 3];
-      this.translation_vector.y = this.shared_position_view[i * 3 + 1];
-      this.translation_vector.z = this.shared_position_view[i * 3 + 2];
-
+      this.translation_vector.x = (this.shared_position_view[i * 3] - 0.5) * WORLD_SIZE[0];
+      this.translation_vector.y = (this.shared_position_view[i * 3 + 1] - 0.5) * WORLD_SIZE[1];
+      this.translation_vector.z = (this.shared_position_view[i * 3 + 2] - 0.5) * WORLD_SIZE[2];
 
       this.matrix.makeTranslation(this.translation_vector);
 

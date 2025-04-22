@@ -1,21 +1,21 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 
-import { dimension } from "../types";
+import { Dimension } from "../types";
 
-export function setup_simulation(dimension: dimension) {
+export function setup_simulation(dimensions: Dimension) {
   const scene = new THREE.Scene();
-  const renderer = createRenderer(dimension);
-  const dimensions = Array(dimension).fill(10.)
-  const camera = createCamera(renderer, dimensions);
+  const renderer = createRenderer(dimensions);
+  const dimensions_array = Array(dimensions).fill(10.)
+  const camera = createCamera(renderer, dimensions_array);
   addLights(scene);
-  createGround(scene, dimensions);
-  createCube(scene, dimensions);
+  createGround(scene, dimensions_array);
+  createCube(scene, dimensions_array);
   window.addEventListener("resize", () => onWindowResize(camera, renderer), false);
   return { scene, renderer, camera };
 }
 
-function createRenderer(dimension: dimension) {
+function createRenderer(dimension: Dimension) {
   const renderer = new THREE.WebGLRenderer();
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ReinhardToneMapping;
@@ -37,7 +37,7 @@ function createCamera(renderer: THREE.Renderer, dimensions: Array<number>): THRE
   camera.position.y = 5;
   camera.position.z = 5;
   camera.rotateY(-Math.PI / 2.);
-  // if (dimension == 2)
+  // if (dimensions== 2)
   //   lockCameraTo2D(camera, controls, dimensions);
   controls.update();
   return camera;

@@ -1,17 +1,17 @@
 import { GUI } from "dat.gui";
 import Stats from 'three/examples/jsm/libs/stats.module'
-import { default_settings, dimension, simulation_settings } from "../types";
+import { default_settings, Dimension, SimulationSettings } from "../types";
 
 export class SettingUI {
-  settings: simulation_settings;
+  settings: SimulationSettings;
   gui: GUI;
   stats: Stats;
-  dimension: dimension;
+  dimensions: Dimension;
   logic_worker: Worker;
 
-  constructor(logic_worker: Worker, dimension: dimension) {
+  constructor(logic_worker: Worker, dimensions: Dimension) {
     this.logic_worker = logic_worker;
-    this.dimension = dimension;
+    this.dimensions = dimensions;
     this.settings = { ...default_settings };
     this.setup_key_inputs();
     this.create_debug_UI();
@@ -37,7 +37,7 @@ export class SettingUI {
     // get domElemnt where gui should be placed
     const container = document.body.querySelector(`.controls`);
     container && container.appendChild(this.gui.domElement);
-    const simulationFolder = this.gui.addFolder(`Simulation ${this.dimension}D`);
+    const simulationFolder = this.gui.addFolder(`Simulation ${this.dimensions}D`);
     simulationFolder.add(this.settings, 'is_paused').name('Pause simulation').listen().onChange(() => this.update_settings_in_worker())
     simulationFolder.add(this.settings, 'mass', 0.1, 10.0, 0.1).name('Particle mass').listen().onChange(() => this.update_settings_in_worker())
     simulationFolder.add(this.settings, 'target_density', 0.1, 100.0).name('Target density').listen().onChange(() => this.update_settings_in_worker())
