@@ -38,9 +38,12 @@ export function update_densities(sections: SectionIndex, section_id: number, pos
     for(let neighbouring_section of neighbouring_sections){
       for(let other_particle_index of sections[neighbouring_section]){
         const distance = dist(positions[3 * particle_index], positions[3 * particle_index + 1], positions[3 * particle_index + 2], positions[3 * other_particle_index], positions[3 * other_particle_index + 1], positions[3 * other_particle_index + 2]);
+        // console.log(distance)
         density += smoothing_kernel_spiky(distance, simulation_settings.radius_of_influence);
       }
     }
+    // if (density > 0.0)
+    //   console.log(density * simulation_settings.mass)
     densities[particle_index] = density * simulation_settings.mass;
   }
 }

@@ -130,7 +130,8 @@ export class SimulationLogic extends AbstractSimulation {
 
   update_colors() {
     const min_density = 0.0;
-    const max_density = 10.0;
+    const max_density = Math.max(...this.views["densities"]);
+    if (Math.random() > 0.99) console.log(this.views)
     for (let i = 0; i < this.number_of_particles; i++) {
       const density = this.views["densities"][i];
       const normed = (density - min_density) / max_density;

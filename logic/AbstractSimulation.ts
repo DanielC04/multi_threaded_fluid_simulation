@@ -22,9 +22,10 @@ export abstract class AbstractSimulation{
 
   setup_arrays_and_views(shared_memory: SharedMemoryMap) {
     this.shared_memory = {};
-    this.shared_memory["positions"] = shared_memory["positions"];
-    this.shared_memory["colors"] = shared_memory["colors"];
+    const shared_memory_names = ["positions", "colors", "densities", "velocities", "pressure_forces"];
+    for(let name of shared_memory_names) this.shared_memory[name] = shared_memory[name];
     if (!this.shared_memory["densities"]){
+        console.log("creating density arrays and stuff")
         this.shared_memory["densities"] = new SharedArrayBuffer(this.number_of_particles * 4);
         this.shared_memory["velocities"] = new SharedArrayBuffer(this.number_of_particles * this.dimensions * 4);
         this.shared_memory["pressure_forces"] = new SharedArrayBuffer(this.number_of_particles * this.dimensions * 4);
@@ -32,7 +33,7 @@ export abstract class AbstractSimulation{
     this.views = {};
     this.views["positions"] = new Float32Array(this.shared_memory["positions"]);
     this.views["colors"] = new Uint32Array(this.shared_memory["colors"]);
-    this.views["densities"] = new Float32Array(this.shared_memory["density"]);
+    this.views["densities"] = new Float32Array(this.shared_memory["densities"]);
     this.views["velocities"] = new Float32Array(this.shared_memory["velocities"]);
     this.views["pressure_forces"] = new Float32Array(this.shared_memory["pressure_forces"]);
   }
