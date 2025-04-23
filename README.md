@@ -1,6 +1,6 @@
 # Fluid Simulation Project
 
-This project is a fluid simulation built using Typescript.
+This project is an extension of my previous fluid simulation, this time using spatial hashing and web-workers for better performance - work in progress!!!
 
 ## Features
 - Real-time fluid dynamics simulation
